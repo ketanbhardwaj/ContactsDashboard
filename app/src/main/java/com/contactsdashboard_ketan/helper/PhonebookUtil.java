@@ -30,6 +30,7 @@ public class PhonebookUtil {
         ArrayList<CallLogsModel> notificationFlowArrayList = new ArrayList<>();
         try {
             if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_CALL_LOG) != PackageManager.PERMISSION_GRANTED) {
+                BLog.e(LOG_TAG, "No Permission");
                 return notificationFlowArrayList;
             }
             String[] columns = null;

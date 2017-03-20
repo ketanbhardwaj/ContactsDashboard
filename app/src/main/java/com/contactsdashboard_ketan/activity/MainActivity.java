@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
     private SharedPreferences permissionStatus;
     private List<PhonebookModel> phonebookModelList = new ArrayList<>();
     private Button proceed_btn;
+    private boolean checlCallLogsPerm = false;
 
     String[] permissionsRequired = new String[]{Manifest.permission.READ_CONTACTS,
             Manifest.permission.READ_EXTERNAL_STORAGE,
@@ -54,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         permissionStatus = getSharedPreferences("permissionStatus",MODE_PRIVATE);
         initViews();
-        checkPermission();
+        checkPermission("fc");
     }
 
     private void initViews(){
@@ -74,8 +75,8 @@ public class MainActivity extends AppCompatActivity {
         proceed_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(MainActivity.this, CallLogsActivity.class);
-                startActivity(intent);
+                checlCallLogsPerm = true;
+                checkPermission("cl");
             }
         });
     }
@@ -98,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void checkPermission(){
+    private void checkPermission(String target){
         if (ActivityCompat.checkSelfPermission(MainActivity.this, permissionsRequired[0]) != PackageManager.PERMISSION_GRANTED
                 || ActivityCompat.checkSelfPermission(MainActivity.this, permissionsRequired[1]) != PackageManager.PERMISSION_GRANTED
                 || ActivityCompat.checkSelfPermission(MainActivity.this, permissionsRequired[2]) != PackageManager.PERMISSION_GRANTED) {
@@ -120,7 +121,9 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.cancel();
-                        finish();
+                        if(!checlCallLogsPerm){
+                            finish();
+                        }
                     }
                 });
                 builder.show();
@@ -146,7 +149,9 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.cancel();
-                        finish();
+                        if(!checlCallLogsPerm){
+                            finish();
+                        }
                     }
                 });
                 builder.show();
@@ -162,12 +167,18 @@ public class MainActivity extends AppCompatActivity {
 
         } else {
             //You already have the permission, just go ahead.
-            proceedAfterPermission();
+            proceedAfterPermission(target);
         }
     }
 
-    private void proceedAfterPermission() {
-        new FetchContactsAsync().execute();
+    private void proceedAfterPermission(String target) {
+        if(target.equals("cl")){
+            Intent intent = new Intent(MainActivity.this, CallLogsActivity.class);
+            startActivity(intent);
+        }else if(target.equals("fc")){
+            new FetchContactsAsync().execute();
+        }
+
     }
 
     @Override
@@ -175,7 +186,13 @@ public class MainActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == READ_CONTACTS_PERMISSION_CONSTANT) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                proceedAfterPermission();
+                BLog.e(LOG_TAG, "onRequestPermissionsResult");
+                if(checlCallLogsPerm && grantResults[2] == PackageManager.PERMISSION_GRANTED){
+                    proceedAfterPermission("cl");
+                    checlCallLogsPerm = false;
+                }else{
+                    proceedAfterPermission("fc");
+                }
             } else {
                 if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, permissionsRequired[0])
                         || ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, permissionsRequired[1])
@@ -195,7 +212,9 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             dialog.cancel();
-                            finish();
+                            if(!checlCallLogsPerm){
+                                finish();
+                            }
                         }
                     });
                     builder.show();
@@ -212,7 +231,13 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == REQUEST_PERMISSION_SETTING) {
             if (ActivityCompat.checkSelfPermission(MainActivity.this, permissionsRequired[0]) == PackageManager.PERMISSION_GRANTED) {
                 //Got Permission
-                proceedAfterPermission();
+                BLog.e(LOG_TAG, "onActivityResult");
+                if(checlCallLogsPerm){
+                    proceedAfterPermission("cl");
+                    checlCallLogsPerm = false;
+                }else{
+                    proceedAfterPermission("fc");
+                }
             }
         }
     }
@@ -224,7 +249,13 @@ public class MainActivity extends AppCompatActivity {
         if (sentToSettings) {
             if (ActivityCompat.checkSelfPermission(MainActivity.this, permissionsRequired[0]) == PackageManager.PERMISSION_GRANTED) {
                 //Got Permission
-                proceedAfterPermission();
+                BLog.e(LOG_TAG, "onPostResume");
+                if(checlCallLogsPerm){
+                    proceedAfterPermission("cl");
+                    checlCallLogsPerm = false;
+                }else{
+                    proceedAfterPermission("fc");
+                }
             }
         }
     }
