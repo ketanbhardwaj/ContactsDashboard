@@ -18,6 +18,8 @@ public class CallLogsModel {
 
     private String totalTalkTime;
 
+    public CallLogsModel(){}
+
     public CallLogsModel(String name, String pic, String mobile, String email, String lastContactTime, String totalTalkTime) {
         this.name = name;
         this.pic = pic;

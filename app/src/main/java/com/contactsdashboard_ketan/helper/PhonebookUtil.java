@@ -1,15 +1,18 @@
 package com.contactsdashboard_ketan.helper;
 
 import android.Manifest;
+import android.content.ContentProviderClient;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.provider.CallLog;
 import android.provider.ContactsContract;
 import android.support.v4.app.ActivityCompat;
 
+import com.contactsdashboard_ketan.base.DatabaseHandler;
 import com.contactsdashboard_ketan.model.CallLogsModel;
 import com.contactsdashboard_ketan.model.PhonebookModel;
 
@@ -17,6 +20,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
+import static android.provider.CallLog.AUTHORITY;
 
 /**
  * Created by Ketan on 3/19/17.
@@ -33,9 +38,18 @@ public class PhonebookUtil {
                 BLog.e(LOG_TAG, "No Permission");
                 return notificationFlowArrayList;
             }
-            String[] columns = null;
-            Cursor managedCursor = context.getContentResolver().query(CallLog.Calls.CONTENT_URI,
-                    columns, CallLog.Calls.DURATION+"> ?", new String[]{"0"}, CallLog.Calls.DURATION + " DESC limit 200");
+            DatabaseHandler db = new DatabaseHandler(context);
+            db.deleteAllRecords();
+
+            String[] columns = new String[] {CallLog.Calls.NUMBER, CallLog.Calls.DATE, CallLog.Calls.CACHED_NAME, CallLog.Calls.CACHED_PHOTO_URI, CallLog.Calls.DURATION };
+            String selection = CallLog.Calls.DURATION+"> ?";
+            Cursor managedCursor = context.getContentResolver().query(
+                    CallLog.Calls.CONTENT_URI,
+                    columns,
+                    selection,
+                    new String[]{"0"},
+                    CallLog.Calls.DURATION + " DESC limit 200");
+
             int number = managedCursor.getColumnIndex(CallLog.Calls.NUMBER);
             int date = managedCursor.getColumnIndex(CallLog.Calls.DATE);
             int duration = managedCursor.getColumnIndex(CallLog.Calls.DURATION);
@@ -50,6 +64,9 @@ public class PhonebookUtil {
                 Date callDayTime = new Date(Long.valueOf(callDate));
                 String fDate = new SimpleDateFormat("dd-MM-yyy hh:mm:ss").format(callDayTime);
                 String callDuration = managedCursor.getString(duration);
+
+
+
                 BLog.e(LOG_TAG, "name - " + usrname);
                 BLog.e(LOG_TAG, "phn - " + phNumber);
                 BLog.e(LOG_TAG, "callDayTime - " + fDate);
@@ -65,9 +82,10 @@ public class PhonebookUtil {
                         "",
                         fDate,
                         callDuration);
+                db.addContact(callLogsModel);
 
-                notificationFlowArrayList.add(callLogsModel);
             }
+            notificationFlowArrayList = db.getAggregatedData();
             managedCursor.close();
         } catch (Exception e) {
             e.printStackTrace();
